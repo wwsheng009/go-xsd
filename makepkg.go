@@ -5,11 +5,11 @@ import (
 	"path"
 	"strings"
 
-	"github.com/metaleap/go-util/dev/go"
-	"github.com/metaleap/go-util/slice"
-	"github.com/metaleap/go-util/str"
+	"github.com/wwsheng009/go-util/uslice"
+	"github.com/wwsheng009/go-util/ustr"
 
 	xsdt "github.com/metaleap/go-xsd/types"
+	udevgo "github.com/wwsheng009/go-util/udev/go"
 )
 
 var (
@@ -92,6 +92,10 @@ type PkgBag struct {
 	elemChoices, elemChoiceRefImps                                                               map[*Choice]string
 	elemSeqs, elemSeqRefImps                                                                     map[*Sequence]string
 	elemKeys, elemRefImps                                                                        map[*Element]string
+
+	longNameMap  map[string]string
+	shortNameMap map[string]string
+	nameCount    int
 }
 
 func newPkgBag(schema *Schema) (bag *PkgBag) {
@@ -126,6 +130,10 @@ func newPkgBag(schema *Schema) (bag *PkgBag) {
 		bag.parseTypes[bag.impName+"."+pt] = true
 	}
 	bag.addType(nil, idPrefix+"HasCdata", "").addField(nil, idPrefix+"CDATA", "string", ",chardata")
+
+	bag.longNameMap = map[string]string{}
+	bag.shortNameMap = map[string]string{}
+	bag.nameCount = 1
 	return
 }
 

@@ -4,9 +4,7 @@ import (
 	"encoding/xml"
 
 	"github.com/metaleap/go-xsd/xsd-makepkg/tests"
-
-	"github.com/metaleap/go-util/dev/go"
-
+	"github.com/wwsheng009/go-util/udev/go"
 	atom "github.com/metaleap/go-xsd-pkg/kbcafe.com/rss/atom.xsd.xml_go"
 )
 

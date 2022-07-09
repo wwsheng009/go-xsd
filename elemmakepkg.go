@@ -6,13 +6,16 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/metaleap/go-util/str"
+	"github.com/wwsheng009/go-util/ustr"
 
 	xsdt "github.com/metaleap/go-xsd/types"
 )
 
 const (
-	idPrefix = "XsdGoPkg"
+	idPrefix            = "Xsd"
+	multiElementPrefix  = "_Elems_"
+	singleElementPrefix = "_Elem_"
+	attrsPrefix         = "_Atts_"
 )
 
 func (me *All) makePkg(bag *PkgBag) {
@@ -74,6 +77,7 @@ func (me *Attribute) makePkg(bag *PkgBag) {
 			key = safeName
 		} else {
 			key = safeName + "_" + bag.safeName(typeName) + "_" + bag.safeName(defVal)
+			key = me.shortKey(bag, key, safeName)
 		}
 		if len(bag.attsCache[key]) == 0 {
 			tmp = idPrefix + "HasAttr_" + key
@@ -109,12 +113,12 @@ func (me *AttributeGroup) makePkg(bag *PkgBag) {
 	if len(me.Ref) > 0 {
 		if len(bag.attGroups[me]) == 0 {
 			refName = bag.resolveQnameRef(me.Ref.String(), "", &refImp)
-			bag.attGroups[me] = idPrefix + "HasAtts_" + refName
+			bag.attGroups[me] = idPrefix + attrsPrefix + refName
 			bag.attGroupRefImps[me] = refImp
 		}
 	} else {
 		safeName := bag.safeName(me.Name.String())
-		tmp := idPrefix + "HasAtts_" + safeName
+		tmp := idPrefix + attrsPrefix + safeName
 		var td = bag.addType(me, tmp, "", me.Annotation)
 		bag.attGroups[me] = tmp
 		for _, ag := range me.AttributeGroups {
@@ -122,9 +126,9 @@ func (me *AttributeGroup) makePkg(bag *PkgBag) {
 				ag.Ref.Set(ag.Name.String())
 			}
 			if refName = bag.resolveQnameRef(ag.Ref.String(), "", &refImp); len(refImp) > 0 {
-				td.addEmbed(ag, refImp+"."+idPrefix+"HasAtts_"+refName[(len(refImp)+1):], ag.Annotation)
+				td.addEmbed(ag, refImp+"."+idPrefix+attrsPrefix+refName[(len(refImp)+1):], ag.Annotation)
 			} else {
-				td.addEmbed(ag, idPrefix+"HasAtts_"+refName, ag.Annotation)
+				td.addEmbed(ag, idPrefix+attrsPrefix+refName, ag.Annotation)
 			}
 		}
 		for _, att := range me.Attributes {
@@ -178,7 +182,8 @@ func (me *ComplexType) makePkg(bag *PkgBag) {
 	me.hasElemComplexContent.makePkg(bag)
 	me.hasElemSimpleContent.makePkg(bag)
 	if len(me.Name) == 0 {
-		me.Name = bag.AnonName(me.longSafeName(bag))
+		// me.Name = bag.AnonName(me.longSafeName(bag))
+		me.Name = bag.AnonName(me.shortSafeName(bag))
 	}
 	typeSafeName = bag.safeName(ustr.PrependIf(me.Name.String(), "T"))
 	var td = bag.addType(me, typeSafeName, "", me.Annotation)
@@ -371,7 +376,7 @@ func (me *Element) makePkg(bag *PkgBag) {
 	me.hasElemComplexType.makePkg(bag)
 	if len(me.Ref) > 0 {
 		key = bag.resolveQnameRef(me.Ref.String(), "", &impName)
-		for pref, cache := range map[string]map[string]string{"HasElem_": bag.elemsCacheOnce, "HasElems_": bag.elemsCacheMult} {
+		for pref, cache := range map[string]map[string]string{singleElementPrefix: bag.elemsCacheOnce, multiElementPrefix: bag.elemsCacheMult} {
 			tmp = ustr.PrefixWithSep(impName, ".", idPrefix+pref+bag.safeName(me.Ref.String()[(strings.Index(me.Ref.String(), ":")+1):]))
 			if bag.elemRefImps[me], bag.elemKeys[me] = impName, key; len(cache[key]) == 0 {
 				cache[key] = tmp
@@ -401,6 +406,7 @@ func (me *Element) makePkg(bag *PkgBag) {
 			key = safeName
 		} else {
 			key = bag.safeName(bag.Stacks.FullName()) + "_" + safeName + "_" + bag.safeName(typeName) + "_" + bag.safeName(defVal)
+			key = me.shortKey(bag, key, safeName)
 		}
 		if valueType = bag.simpleContentValueTypes[typeName]; len(valueType) == 0 {
 			valueType = typeName
@@ -409,12 +415,14 @@ func (me *Element) makePkg(bag *PkgBag) {
 		if _, isChoice := me.Parent().(*Choice); isChoice && isPt {
 			asterisk = "*"
 		}
-		for pref, cache := range map[string]map[string]string{"HasElem_": bag.elemsCacheOnce, "HasElems_": bag.elemsCacheMult} {
+		for pref, cache := range map[string]map[string]string{singleElementPrefix: bag.elemsCacheOnce, multiElementPrefix: bag.elemsCacheMult} {
 			if tmp = idPrefix + pref + key; !bag.elemsWritten[tmp] {
 				bag.elemsWritten[tmp], bag.elemKeys[me] = true, key
 				cache[key] = tmp
 				var td = bag.addType(me, tmp, "", me.Annotation)
-				td.addField(me, ustr.Ifs(pref == "HasElems_", pluralize(safeName), safeName), ustr.Ifs(pref == "HasElems_", "[]"+asterisk+typeName, asterisk+typeName), ustr.Ifs(len(bag.Schema.TargetNamespace) > 0, bag.Schema.TargetNamespace.String()+" ", "")+me.Name.String(), me.Annotation)
+				// td.addField(me, ustr.Ifs(pref == multiElementPrefix, pluralize(safeName), safeName), ustr.Ifs(pref == multiElementPrefix, "[]"+asterisk+typeName, asterisk+typeName), ustr.Ifs(len(bag.Schema.TargetNamespace) > 0, bag.Schema.TargetNamespace.String()+" ", "")+me.Name.String(), me.Annotation)
+				td.addField(me, ustr.Ifs(pref == multiElementPrefix, pluralize(safeName), safeName), ustr.Ifs(pref == multiElementPrefix, "[]"+asterisk+typeName, asterisk+typeName), me.Name.String(), me.Annotation)
+
 				if me.parent == bag.Schema {
 					loadedSchemas := make(map[string]bool)
 					for _, subEl = range bag.Schema.RootSchema([]string{bag.Schema.loadUri}).globalSubstitutionElems(me, loadedSchemas) {
@@ -742,7 +750,8 @@ func (me *SimpleType) makePkg(bag *PkgBag) {
 	var resolve = true
 	var isPt bool
 	if len(typeName) == 0 {
-		typeName = bag.AnonName(me.longSafeName(bag))
+		// typeName = bag.AnonName(me.longSafeName(bag))
+		typeName = bag.AnonName(me.shortSafeName(bag))
 		me.Name = typeName
 	} else {
 		me.Name = typeName

@@ -1,6 +1,8 @@
 package xsd
 
 import (
+	"fmt"
+
 	xsdt "github.com/metaleap/go-xsd/types"
 )
 
@@ -45,7 +47,59 @@ func (me *elemBase) init(parent, self element, xsdName xsdt.NCName, atts ...befo
 		}
 	}
 }
+func (me *elemBase) shortSafeName(bag *PkgBag) (ln string) {
+	ln1 := me.longSafeName(bag)
+	if s, ok := bag.longNameMap[ln1]; ok {
+		return s
+	} else {
+		// name1 := me.base().selfName().String()
+		// if name1 == "" {
+		name1 := ""
 
+		for el := me.self; (el != nil) && (el != bag.Schema); el = el.Parent() {
+			name1 = el.base().selfName().String()
+			if name1 == "value" {
+				continue
+			}
+			if name1 != "" {
+
+				break
+			}
+
+		}
+		// }
+		if name1 == "" {
+			name1 = ln1
+		} else {
+			if _, ok := bag.shortNameMap[name1]; ok {
+				name1 = fmt.Sprintf("%s%04d", name1, bag.nameCount)
+				bag.nameCount += 1
+			}
+
+		}
+		name1 = bag.safeName(name1)
+		bag.longNameMap[ln1] = name1
+		bag.shortNameMap[name1] = ln1
+		return name1
+	}
+
+}
+func (me *elemBase) shortKey(bag *PkgBag, longkey, shortkey string) (ln string) {
+
+	if s, ok := bag.longNameMap[longkey]; ok {
+		return s
+	} else {
+		name1 := ""
+		if _, ok := bag.shortNameMap[shortkey]; ok {
+			name1 = fmt.Sprintf("%s%04d", shortkey, bag.nameCount)
+			bag.nameCount += 1
+		}
+		name1 = bag.safeName(name1)
+		bag.shortNameMap[shortkey] = longkey
+		bag.longNameMap[longkey] = name1
+		return name1
+	}
+}
 func (me *elemBase) longSafeName(bag *PkgBag) (ln string) {
 	var els = []element{}
 	for el := me.self; (el != nil) && (el != bag.Schema); el = el.Parent() {
