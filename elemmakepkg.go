@@ -13,9 +13,13 @@ import (
 
 const (
 	idPrefix            = "Xsd"
-	multiElementPrefix  = "_Elems_"
-	singleElementPrefix = "_Elem_"
-	attrsPrefix         = "_Atts_"
+	ElementPrefix       = "_Elem"
+	multiElementPrefix  = ElementPrefix + "s_"
+	singleElementPrefix = ElementPrefix + "_"
+	AttrPrefix          = "_Attr"
+	multiAttrPrefix     = AttrPrefix + "s_"
+	singleAttrPrefix    = AttrPrefix + "_"
+	groupPrefix         = "_Group_"
 )
 
 func (me *All) makePkg(bag *PkgBag) {
@@ -56,7 +60,7 @@ func (me *Attribute) makePkg(bag *PkgBag) {
 	me.hasElemsSimpleType.makePkg(bag)
 	if len(me.Ref) > 0 {
 		key = bag.resolveQnameRef(me.Ref.String(), "", &impName)
-		tmp = ustr.PrefixWithSep(impName, ".", idPrefix+"HasAttr_"+bag.safeName(me.Ref.String()[(strings.Index(me.Ref.String(), ":")+1):]))
+		tmp = ustr.PrefixWithSep(impName, ".", idPrefix+singleAttrPrefix+bag.safeName(me.Ref.String()[(strings.Index(me.Ref.String(), ":")+1):]))
 		if bag.attRefImps[me], bag.attsKeys[me] = impName, key; len(bag.attsCache[key]) == 0 {
 			bag.attsCache[key] = tmp
 		}
@@ -80,7 +84,7 @@ func (me *Attribute) makePkg(bag *PkgBag) {
 			key = me.shortKey(bag, key, safeName)
 		}
 		if len(bag.attsCache[key]) == 0 {
-			tmp = idPrefix + "HasAttr_" + key
+			tmp = idPrefix + singleAttrPrefix + key
 			bag.attsKeys[me] = key
 			bag.attsCache[key] = tmp
 			var td = bag.addType(me, tmp, "", me.Annotation)
@@ -113,12 +117,12 @@ func (me *AttributeGroup) makePkg(bag *PkgBag) {
 	if len(me.Ref) > 0 {
 		if len(bag.attGroups[me]) == 0 {
 			refName = bag.resolveQnameRef(me.Ref.String(), "", &refImp)
-			bag.attGroups[me] = idPrefix + attrsPrefix + refName
+			bag.attGroups[me] = idPrefix + multiAttrPrefix + refName
 			bag.attGroupRefImps[me] = refImp
 		}
 	} else {
 		safeName := bag.safeName(me.Name.String())
-		tmp := idPrefix + attrsPrefix + safeName
+		tmp := idPrefix + multiAttrPrefix + safeName
 		var td = bag.addType(me, tmp, "", me.Annotation)
 		bag.attGroups[me] = tmp
 		for _, ag := range me.AttributeGroups {
@@ -126,9 +130,9 @@ func (me *AttributeGroup) makePkg(bag *PkgBag) {
 				ag.Ref.Set(ag.Name.String())
 			}
 			if refName = bag.resolveQnameRef(ag.Ref.String(), "", &refImp); len(refImp) > 0 {
-				td.addEmbed(ag, refImp+"."+idPrefix+attrsPrefix+refName[(len(refImp)+1):], ag.Annotation)
+				td.addEmbed(ag, refImp+"."+idPrefix+multiAttrPrefix+refName[(len(refImp)+1):], ag.Annotation)
 			} else {
-				td.addEmbed(ag, idPrefix+attrsPrefix+refName, ag.Annotation)
+				td.addEmbed(ag, idPrefix+multiAttrPrefix+refName, ag.Annotation)
 			}
 		}
 		for _, att := range me.Attributes {
@@ -486,13 +490,13 @@ func (me *Group) makePkg(bag *PkgBag) {
 	if len(me.Ref) > 0 {
 		if len(bag.elemGroups[me]) == 0 {
 			refName = bag.resolveQnameRef(me.Ref.String(), "", &refImp)
-			bag.elemGroups[me] = idPrefix + "HasGroup_" + refName
+			bag.elemGroups[me] = idPrefix + groupPrefix + refName
 			bag.elemGroupRefImps[me] = refImp
 		}
 	} else {
 		me.Ref.Set(me.Name.String())
 		safeName := bag.safeName(me.Name.String())
-		tmp := idPrefix + "HasGroup_" + safeName
+		tmp := idPrefix + groupPrefix + safeName
 		bag.elemGroups[me] = tmp
 		var td = bag.addType(me, tmp, "", me.Annotation)
 		choices, seqs = Flattened(choices, seqs)
@@ -884,10 +888,10 @@ func subMakeElemGroup(bag *PkgBag, td *declType, gr *Group, done map[string]bool
 	if refName := bag.resolveQnameRef(gr.Ref.String(), "", &refImp); !done[refName] {
 		if done[refName] = true; len(refImp) > 0 {
 			if !strings.HasPrefix(refName, bag.impName+"."+idPrefix) {
-				td.addEmbed(gr, refImp+"."+idPrefix+"HasGroup_"+refName[(len(refImp)+1):], anns...)
+				td.addEmbed(gr, refImp+"."+idPrefix+groupPrefix+refName[(len(refImp)+1):], anns...)
 			}
 		} else {
-			td.addEmbed(gr, idPrefix+"HasGroup_"+refName, anns...)
+			td.addEmbed(gr, idPrefix+groupPrefix+refName, anns...)
 		}
 	}
 }

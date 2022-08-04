@@ -115,3 +115,8 @@ Command-line flags for *go-xsd/xsd-makepkg* tool:
 - **-uri=""**: The XML Schema Definition file URIs to generate a Go wrapper packages from, whitespace-separated. (For each, the protocol prefix can be omitted, it then defaults to *http://*. Only protocols understood by the *net/http* package are supported.)
 - **-gofmt=true**: Run 'gofmt' against the generated Go wrapper package?
 - **-goinst=true**: Run 'go-buildrun' ( http://github.com/metaleap/go-buildrun ) against the generated Go wrapper package?
+
+
+## clone说明
+原项目功能比较复杂，每一个xml元素都生成了独立的一个结构类型，并且结构类型的命名比较啰嗦，代码可读性比较差
+生成xsd文件对应的结构之外，还生成了处理函数

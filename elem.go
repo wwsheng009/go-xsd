@@ -48,56 +48,52 @@ func (me *elemBase) init(parent, self element, xsdName xsdt.NCName, atts ...befo
 	}
 }
 func (me *elemBase) shortSafeName(bag *PkgBag) (ln string) {
-	ln1 := me.longSafeName(bag)
-	if s, ok := bag.longNameMap[ln1]; ok {
+	lname := me.longSafeName(bag)
+	if s, ok := bag.longNameMap[lname]; ok {
 		return s
 	} else {
-		// name1 := me.base().selfName().String()
-		// if name1 == "" {
-		name1 := ""
-
+		tmpName := ""
 		for el := me.self; (el != nil) && (el != bag.Schema); el = el.Parent() {
-			name1 = el.base().selfName().String()
-			if name1 == "value" {
+			tmpName = el.base().selfName().String()
+			if tmpName == "value" {
 				continue
 			}
-			if name1 != "" {
-
+			if tmpName != "" {
 				break
 			}
-
 		}
-		// }
-		if name1 == "" {
-			name1 = ln1
+		if tmpName == "" {
+			tmpName = lname
 		} else {
-			if _, ok := bag.shortNameMap[name1]; ok {
-				name1 = fmt.Sprintf("%s%04d", name1, bag.nameCount)
+			if _, ok := bag.shortNameMap[tmpName]; ok {
+				tmpName = fmt.Sprintf("%s%04d", tmpName, bag.nameCount)
 				bag.nameCount += 1
 			}
-
 		}
-		name1 = bag.safeName(name1)
-		bag.longNameMap[ln1] = name1
-		bag.shortNameMap[name1] = ln1
-		return name1
+		tmpName = bag.safeName(tmpName)
+		bag.longNameMap[lname] = tmpName
+		bag.shortNameMap[tmpName] = lname
+		return tmpName
 	}
 
 }
 func (me *elemBase) shortKey(bag *PkgBag, longkey, shortkey string) (ln string) {
-
+	if shortkey == "" {
+		return longkey
+	}
 	if s, ok := bag.longNameMap[longkey]; ok {
 		return s
 	} else {
-		name1 := ""
+		tmpName := ""
 		if _, ok := bag.shortNameMap[shortkey]; ok {
-			name1 = fmt.Sprintf("%s%04d", shortkey, bag.nameCount)
+			tmpName = fmt.Sprintf("%s%04d", shortkey, bag.nameCount)
 			bag.nameCount += 1
 		}
-		name1 = bag.safeName(name1)
+		tmpName = bag.safeName(tmpName)
+
 		bag.shortNameMap[shortkey] = longkey
-		bag.longNameMap[longkey] = name1
-		return name1
+		bag.longNameMap[longkey] = tmpName
+		return tmpName
 	}
 }
 func (me *elemBase) longSafeName(bag *PkgBag) (ln string) {
